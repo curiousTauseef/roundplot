@@ -1,0 +1,27 @@
+{
+  "name": "roundplot",
+  "version": "0.0.0",
+  "homepage": "https://github.com/lovasoa/roundplot",
+  "authors": [
+    "Ophir LOJKINE <pere.jobs@gmail.com>"
+  ],
+  "description": "Circular time charts library, based on D3",
+  "main": "dist/roundplot.js",
+  "keywords": [
+    "chart",
+    "graph",
+    "plot",
+    "circular",
+    "round",
+    "time",
+    "d3"
+  ],
+  "license": "LGPLv3",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}

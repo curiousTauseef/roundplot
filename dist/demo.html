@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf8"/>
+  <title>Chargerond</title>
+  <style>
+body {
+  background-color: black;
+}
+  </style>
+</head>
+<body>
+<div id="graph"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js" charset="utf-8"></script>
+<script src="roundplot.js" charset="utf-8"></script>
+<script>
+var data = [];
+for(var i=0, curval=200; i<2*12; i++) {
+  curval += 20*Math.random()-10;
+  var d = new Date;
+  d.setHours(i/6);
+  d.setMinutes(10*(i%6));
+  data.push({date: d, value: curval}); 
+}
+
+setInterval(function(){
+  var last = data[data.length-1];
+  var d = new Date(last.date);
+  d.setMinutes(d.getMinutes()+10);
+  var datum = {date: d, value: last.value + 20*Math.random()-10};
+  data.push(datum);
+  plot.setData(data);
+}, 1*1000);
+
+var plot = new RoundPlot({data: data, target:"#graph"});
+</script>
+</body>
+</html>

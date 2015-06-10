@@ -139,4 +139,3 @@ RoundPlot.Data.prototype = {
   first() {return this.raw[0]},
   last()  {return this.raw[this.raw.length-1]}
 }
-

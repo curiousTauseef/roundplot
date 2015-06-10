@@ -1,0 +1,25 @@
+{
+  "name": "roundplot",
+  "version": "0.0.1",
+  "description": "Circular time charts library, based on D3",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/lovasoa/roundplot.git"
+  },
+  "keywords": [
+    "d3",
+    "chart",
+    "circlular graph"
+  ],
+  "author": "Ophir LOJKINE",
+  "license": "LGPLv3",
+  "readmeFilename": "README.md",
+  "dependencies": {
+    "d3": "3.x"
+  },
+  "devDependencies": {
+    "gulp": "3.x",
+    "gulp-babel": "5.x",
+    "gulp-sourcemaps": "1.5.x"
+  }
+}
