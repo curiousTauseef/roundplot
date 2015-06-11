@@ -19,7 +19,6 @@
   },
   "devDependencies": {
     "gulp": "3.x",
-    "gulp-babel": "5.x",
-    "gulp-sourcemaps": "1.5.x"
+    "gulp-babel": "5.x"
   }
 }

@@ -4,8 +4,6 @@ var babel = require("gulp-babel");
 
 gulp.task("default", function () {
   return gulp.src("src/*.es6")
-    .pipe(sourcemaps.init())
     .pipe(babel())
-    .pipe(sourcemaps.write("."))
     .pipe(gulp.dest("dist"));
 });
