@@ -14,25 +14,27 @@ body {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js" charset="utf-8"></script>
 <script src="roundplot.js" charset="utf-8"></script>
 <script>
-var data = [];
-for(var i=0, curval=200; i<2*12; i++) {
-  curval += 20*Math.random()-10;
-  var d = new Date;
-  d.setHours(i/6);
-  d.setMinutes(10*(i%6));
-  data.push({date: d, value: curval}); 
-}
+var data = [
+  {date: new Date("2015-01-01T00:00"), value:.5},
+  {date: new Date("2015-01-01T00:01"), value:1},
+];
 
-setInterval(function(){
-  var last = data[data.length-1];
-  var d = new Date(last.date);
-  d.setMinutes(d.getMinutes()+10);
-  var datum = {date: d, value: last.value + 20*Math.random()-10};
-  data.push(datum);
-  plot.setData(data);
-}, 1*1000);
-
-var plot = new RoundPlot({data: data, target:"#graph"});
+var plot = new RoundPlot({
+    data: data,
+    target: "#graph",
+    size: 550, // size of the generated svg, in px
+    clockRadius: 150, // Radius of the inner circle
+    timeInClock: 1*60*60*1000, // How much time (in ms) a full circle represents
+    valueToColor: function (v){return v>3?"red":"green";}, // Color of the bars
+    dateFormat: function(d){return d.toLocaleString();},
+    valueFormat: function(v){return v.toFixed(2)},
+});
+    
+ setInterval(function(){
+    var last = data[data.length-1];
+    data.push({date: new Date(last.date.getTime()+10000), value: last.value+Math.random()-.5});
+    plot.setData(data);   
+ }, 1000);
 </script>
 </body>
 </html>
