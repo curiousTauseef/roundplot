@@ -1,29 +1,28 @@
 function RoundPlot(params={}) {
-  this.data = new RoundPlot.Data(params.data);
   this.clockRadius = params.clockRadius || 100;
   this.size = params.size || 500;
+  this.alpha0 = params.alpha0 || 0;
   this.svg = d3.select(params.target+" svg");
   if (this.svg.node() === null) this.svg = this.createSVG(params.target, this.size); 
   this.addHandlers();
-  this.t0  = params.t0 ||  this.data.first().date;
-  this.timeInClock = params.timeInClock || 12 * 60 * 60 * 1000; // Default to 12 hours in the clock
   if (params.dateFormat) this.dateFormat = params.dateFormat;
   if (params.valueToColor) this.valueToColor = params.valueToColor;
-  this.paint();
-  this.moveCursor(this.data.last());
+  this.timeInClock = params.timeInClock || 12 * 60 * 60 * 1000; // Default to 12 hours in the clock
+  this.setData(params.data);
 }
 
 RoundPlot.prototype = {
   scale(x) {
     return this.clockRadius + this.data.norm(x) * (this.size/2 - this.clockRadius);
   },
-  setData(rawData, moveCursor=true) {
+  setData(rawData, moveCursor=(rawData.length !== 0)) {
     this.data = new RoundPlot.Data(rawData);
+    this.d0 = (rawData.length>0)? rawData[0].date.getTime() : 0;
     if (moveCursor) this.moveCursor(this.data.last());
     this.paint();
   },
   dateToAngle(d) { //Returns an angle in degrees
-    return (d - this.t0) * 360 / this.timeInClock;
+    return this.alpha0 + (d - this.d0) * 360 / this.timeInClock;
   },
   dateFormat(d) {
     const pad = n => ('0'+n).slice(-2);
@@ -52,7 +51,7 @@ RoundPlot.prototype = {
             fill: #999;
           }
           .valueBar {
-            stroke-dasharray: 5,5;
+            stroke-dasharray: 5,1;
             stroke-width: 2;
           }
           .circ {
@@ -72,7 +71,11 @@ RoundPlot.prototype = {
     `).select("svg");
   },
   paintValueBars() {
-    const valueBars = this.svg.selectAll("line.valueBar").data(this.data.raw);
+    const last = this.data.last();
+    const paintingData = this.data.raw.filter(
+        d => last.date-d.date < this.timeInClock
+    );
+    const valueBars = this.svg.selectAll("line.valueBar").data(paintingData);
     const s = this.size, m=s/2, r = this.clockRadius;
     valueBars.enter().append("line")
       .attr("class", "valueBar")
@@ -89,13 +92,14 @@ RoundPlot.prototype = {
     valueBars.exit().remove();
   },
   paintCircs() {
-    const m = this.size/2;
+    const m = this.size/2,
+          min = this.clockRadius, max = this.size/2;
     const circs = this.svg.selectAll("circle.circ")
-      .data([this.data.min, (this.data.max+this.data.min)/2, this.data.max]);
+      .data([min, (min+max)/2, max]);
     circs.enter()
       .append("circle").attr("class", "circ");
-    circs.attr("cx", m).attr("cy", m).attr("r", d=>this.scale(d))
-         .attr("stroke", d=>d3.rgb(10+100*this.data.norm(d), 20, 20))
+    circs.attr("cx", m).attr("cy", m).attr("r", d=>d)
+         .attr("stroke", d=>d3.rgb((d-min)/(max-min)*255, 80, 80))
   },
   paint() {
     this.paintValueBars();
@@ -103,12 +107,12 @@ RoundPlot.prototype = {
   },
   moveCursor(datum) {
     const angle = this.dateToAngle(datum.date) * Math.PI/180  - Math.PI/2;
-    const max = this.data.max;
+    const r = this.clockRadius, m = this.size/2;
     this.svg.select("#cursor")
-       .attr("x1", this.size/2 + Math.cos(angle)*(this.clockRadius-10))
-       .attr("y1", this.size/2 + Math.sin(angle)*(this.clockRadius-10))
-       .attr("x2", this.size/2 + Math.cos(angle)*this.scale(max))
-       .attr("y2", this.size/2 + Math.sin(angle)*this.scale(max));
+       .attr("x1", m + Math.cos(angle)*(r-10))
+       .attr("y1", m + Math.sin(angle)*(r-10))
+       .attr("x2", m + Math.cos(angle)*m)
+       .attr("y2", m + Math.sin(angle)*m);
     this.svg.select("#dateLegend").text(this.dateFormat(datum.date));
     this.svg.select("#valueLegend")
               .text(this.valueFormat(datum.value))
@@ -128,11 +132,19 @@ RoundPlot.prototype = {
   }
 };
 
-RoundPlot.Data = function Data(raw) {
-  this.raw = raw;
-  var values = raw.map(d=>d.value.valueOf());
-  this.min = values.reduce((a,b)=>a<b?a:b);
-  this.max = values.reduce((a,b)=>a>b?a:b);
+RoundPlot.Data = function Data(raw=[]) {
+  if (raw.length !== 0) { 
+    this.raw = raw;
+    [this.min, this.max] = this.raw.reduce(
+        (prev, cur) => {
+          if (cur.value<prev[0]) prev[0] = cur.value;
+          if (cur.value>prev[1]) prev[1] = cur.value;
+          return prev;
+        },
+        [Infinity, -Infinity]);
+  } else {
+    this.raw = raw, this.min=this.max=0;
+  }
 }
 RoundPlot.Data.prototype = {
   norm(x) {return (x-this.min) / (this.max - this.min)},

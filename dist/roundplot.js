@@ -5,18 +5,16 @@ function _slicedToArray(arr, i) { if (Array.isArray(arr)) { return arr; } else i
 function RoundPlot() {
   var params = arguments[0] === undefined ? {} : arguments[0];
 
-  this.data = new RoundPlot.Data(params.data);
   this.clockRadius = params.clockRadius || 100;
   this.size = params.size || 500;
+  this.alpha0 = params.alpha0 || 0;
   this.svg = d3.select(params.target + " svg");
   if (this.svg.node() === null) this.svg = this.createSVG(params.target, this.size);
   this.addHandlers();
-  this.t0 = params.t0 || this.data.first().date;
-  this.timeInClock = params.timeInClock || 12 * 60 * 60 * 1000; // Default to 12 hours in the clock
   if (params.dateFormat) this.dateFormat = params.dateFormat;
   if (params.valueToColor) this.valueToColor = params.valueToColor;
-  this.paint();
-  this.moveCursor(this.data.last());
+  this.timeInClock = params.timeInClock || 12 * 60 * 60 * 1000; // Default to 12 hours in the clock
+  this.setData(params.data);
 }
 
 RoundPlot.prototype = {
@@ -24,15 +22,17 @@ RoundPlot.prototype = {
     return this.clockRadius + this.data.norm(x) * (this.size / 2 - this.clockRadius);
   },
   setData: function setData(rawData) {
-    var moveCursor = arguments[1] === undefined ? true : arguments[1];
-
-    this.data = new RoundPlot.Data(rawData);
-    if (moveCursor) this.moveCursor(this.data.last());
-    this.paint();
+    var moveCursor = arguments[1] === undefined ? rawData.length !== 0 : arguments[1];
+    return (function () {
+      this.data = new RoundPlot.Data(rawData);
+      this.d0 = rawData.length > 0 ? rawData[0].date.getTime() : 0;
+      if (moveCursor) this.moveCursor(this.data.last());
+      this.paint();
+    }).apply(this, arguments);
   },
   dateToAngle: function dateToAngle(d) {
     //Returns an angle in degrees
-    return (d - this.t0) * 360 / this.timeInClock;
+    return this.alpha0 + (d - this.d0) * 360 / this.timeInClock;
   },
   dateFormat: function dateFormat(d) {
     var pad = function pad(n) {
@@ -55,12 +55,16 @@ RoundPlot.prototype = {
     var middle = this.size / 2,
         radius = this.clockRadius,
         lineHeight = radius / 5;
-    return d3.select(target).html("\n      <svg width=\"" + size + "\" height=\"" + size + "\">\n        <style>\n          #cursor{\n            stroke : #999;\n          }\n          #legend > text {\n            text-anchor: middle;\n            font-size: 20;\n            font-family: mono;\n          }\n          #dateLegend {\n            fill: #999;\n          }\n          .valueBar {\n            stroke-dasharray: 5,5;\n            stroke-width: 2;\n          }\n          .circ {\n            fill: none;\n          }\n        </style>\n        <line id=\"cursor\"\n              x1=\"" + size / 2 + "\" y1=\"" + (size / 2 - this.clockRadius + 10) + "\"\n              x2=\"" + size / 2 + "\" y2=\"0\"></line>\n        <g id=\"legend\">\n          <text id=\"dateLegend\"\n                x=\"" + size / 2 + "\" y=\"" + (middle - radius / 2 + lineHeight) + "\"></text>\n          <text id=\"valueLegend\"\n                x=\"" + size / 2 + "\" y=\"" + (middle + radius / 2 - lineHeight) + "\"></text>\n        </g>\n      </svg>\n    ").select("svg");
+    return d3.select(target).html("\n      <svg width=\"" + size + "\" height=\"" + size + "\">\n        <style>\n          #cursor{\n            stroke : #999;\n          }\n          #legend > text {\n            text-anchor: middle;\n            font-size: 20;\n            font-family: mono;\n          }\n          #dateLegend {\n            fill: #999;\n          }\n          .valueBar {\n            stroke-dasharray: 5,1;\n            stroke-width: 2;\n          }\n          .circ {\n            fill: none;\n          }\n        </style>\n        <line id=\"cursor\"\n              x1=\"" + size / 2 + "\" y1=\"" + (size / 2 - this.clockRadius + 10) + "\"\n              x2=\"" + size / 2 + "\" y2=\"0\"></line>\n        <g id=\"legend\">\n          <text id=\"dateLegend\"\n                x=\"" + size / 2 + "\" y=\"" + (middle - radius / 2 + lineHeight) + "\"></text>\n          <text id=\"valueLegend\"\n                x=\"" + size / 2 + "\" y=\"" + (middle + radius / 2 - lineHeight) + "\"></text>\n        </g>\n      </svg>\n    ").select("svg");
   },
   paintValueBars: function paintValueBars() {
     var _this = this;
 
-    var valueBars = this.svg.selectAll("line.valueBar").data(this.data.raw);
+    var last = this.data.last();
+    var paintingData = this.data.raw.filter(function (d) {
+      return last.date - d.date < _this.timeInClock;
+    });
+    var valueBars = this.svg.selectAll("line.valueBar").data(paintingData);
     var s = this.size,
         m = s / 2,
         r = this.clockRadius;
@@ -79,15 +83,15 @@ RoundPlot.prototype = {
     valueBars.exit().remove();
   },
   paintCircs: function paintCircs() {
-    var _this2 = this;
-
-    var m = this.size / 2;
-    var circs = this.svg.selectAll("circle.circ").data([this.data.min, (this.data.max + this.data.min) / 2, this.data.max]);
+    var m = this.size / 2,
+        min = this.clockRadius,
+        max = this.size / 2;
+    var circs = this.svg.selectAll("circle.circ").data([min, (min + max) / 2, max]);
     circs.enter().append("circle").attr("class", "circ");
     circs.attr("cx", m).attr("cy", m).attr("r", function (d) {
-      return _this2.scale(d);
+      return d;
     }).attr("stroke", function (d) {
-      return d3.rgb(10 + 100 * _this2.data.norm(d), 20, 20);
+      return d3.rgb((d - min) / (max - min) * 255, 80, 80);
     });
   },
   paint: function paint() {
@@ -96,31 +100,32 @@ RoundPlot.prototype = {
   },
   moveCursor: function moveCursor(datum) {
     var angle = this.dateToAngle(datum.date) * Math.PI / 180 - Math.PI / 2;
-    var max = this.data.max;
-    this.svg.select("#cursor").attr("x1", this.size / 2 + Math.cos(angle) * (this.clockRadius - 10)).attr("y1", this.size / 2 + Math.sin(angle) * (this.clockRadius - 10)).attr("x2", this.size / 2 + Math.cos(angle) * this.scale(max)).attr("y2", this.size / 2 + Math.sin(angle) * this.scale(max));
+    var r = this.clockRadius,
+        m = this.size / 2;
+    this.svg.select("#cursor").attr("x1", m + Math.cos(angle) * (r - 10)).attr("y1", m + Math.sin(angle) * (r - 10)).attr("x2", m + Math.cos(angle) * m).attr("y2", m + Math.sin(angle) * m);
     this.svg.select("#dateLegend").text(this.dateFormat(datum.date));
     this.svg.select("#valueLegend").text(this.valueFormat(datum.value)).transition().attr("fill", this.valueToColor(datum.value));
   },
   addHandlers: function addHandlers() {
-    var _this3 = this;
+    var _this2 = this;
 
     this.svg.on("mousemove", function () {
-      var _d3$mouse = d3.mouse(_this3.svg.node());
+      var _d3$mouse = d3.mouse(_this2.svg.node());
 
       var _d3$mouse2 = _slicedToArray(_d3$mouse, 2);
 
       var x = _d3$mouse2[0];
       var y = _d3$mouse2[1];
 
-      var m = _this3.size / 2;
+      var m = _this2.size / 2;
       var angle = Math.atan2(x - m, m - y) * 180 / Math.PI;
       var dist = function dist(d) {
-        return (Math.abs(_this3.dateToAngle(d.date) - angle) + 360) % 360;
+        return (Math.abs(_this2.dateToAngle(d.date) - angle) + 360) % 360;
       };
-      var datum = _this3.data.raw.reduce(function (p, c) {
+      var datum = _this2.data.raw.reduce(function (p, c) {
         return dist(p) < dist(c) ? p : c;
       });
-      _this3.moveCursor(datum);
+      _this2.moveCursor(datum);
     });
     this.svg.on("click", function () {
       return d3.event.preventDefault() && false;
@@ -128,17 +133,25 @@ RoundPlot.prototype = {
   }
 };
 
-RoundPlot.Data = function Data(raw) {
-  this.raw = raw;
-  var values = raw.map(function (d) {
-    return d.value.valueOf();
-  });
-  this.min = values.reduce(function (a, b) {
-    return a < b ? a : b;
-  });
-  this.max = values.reduce(function (a, b) {
-    return a > b ? a : b;
-  });
+RoundPlot.Data = function Data() {
+  var raw = arguments[0] === undefined ? [] : arguments[0];
+
+  if (raw.length !== 0) {
+    this.raw = raw;
+
+    var _raw$reduce = this.raw.reduce(function (prev, cur) {
+      if (cur.value < prev[0]) prev[0] = cur.value;
+      if (cur.value > prev[1]) prev[1] = cur.value;
+      return prev;
+    }, [Infinity, -Infinity]);
+
+    var _raw$reduce2 = _slicedToArray(_raw$reduce, 2);
+
+    this.min = _raw$reduce2[0];
+    this.max = _raw$reduce2[1];
+  } else {
+    this.raw = raw, this.min = this.max = 0;
+  }
 };
 RoundPlot.Data.prototype = {
   norm: function norm(x) {
@@ -151,4 +164,3 @@ RoundPlot.Data.prototype = {
     return this.raw[this.raw.length - 1];
   }
 };
-//# sourceMappingURL=roundplot.js.map
