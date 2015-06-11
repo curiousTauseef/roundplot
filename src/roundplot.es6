@@ -6,6 +6,7 @@ function RoundPlot(params={}) {
   if (this.svg.node() === null) this.svg = this.createSVG(params.target, this.size); 
   this.addHandlers();
   if (params.dateFormat) this.dateFormat = params.dateFormat;
+  if (params.valueFormat) this.valueFormat = params.valueFormat;
   if (params.valueToColor) this.valueToColor = params.valueToColor;
   this.timeInClock = params.timeInClock || 12 * 60 * 60 * 1000; // Default to 12 hours in the clock
   this.setData(params.data);
