@@ -16,7 +16,7 @@ RoundPlot.prototype = {
   scale(x) {
     return this.clockRadius + this.data.norm(x) * (this.size/2 - this.clockRadius);
   },
-  setData(rawData, moveCursor=(rawData.length !== 0)) {
+  setData(rawData = [], moveCursor=(rawData.length !== 0)) {
     this.data = new RoundPlot.Data(rawData);
     this.d0 = (rawData.length>0)? rawData[0].date.getTime() : 0;
     if (moveCursor) this.moveCursor(this.data.last());

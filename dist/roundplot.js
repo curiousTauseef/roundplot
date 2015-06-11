@@ -22,7 +22,8 @@ RoundPlot.prototype = {
   scale: function scale(x) {
     return this.clockRadius + this.data.norm(x) * (this.size / 2 - this.clockRadius);
   },
-  setData: function setData(rawData) {
+  setData: function setData() {
+    var rawData = arguments[0] === undefined ? [] : arguments[0];
     var moveCursor = arguments[1] === undefined ? rawData.length !== 0 : arguments[1];
     return (function () {
       this.data = new RoundPlot.Data(rawData);
