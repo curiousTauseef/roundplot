@@ -40,7 +40,7 @@ RoundPlot.prototype = {
     var pad = function pad(n) {
       return ("0" + n).slice(-2);
     };
-    var day = d.getDay(),
+    var day = d.getDate(),
         month = d.getMonth(),
         h = d.getHours(),
         m = d.getMinutes();

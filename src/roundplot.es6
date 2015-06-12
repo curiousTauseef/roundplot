@@ -27,7 +27,7 @@ RoundPlot.prototype = {
   },
   dateFormat(d) {
     const pad = n => ('0'+n).slice(-2);
-    const day = d.getDay(), month = d.getMonth(), h = d.getHours(), m = d.getMinutes();
+    const day = d.getDate(), month = d.getMonth(), h = d.getHours(), m = d.getMinutes();
     return `${pad(day)}/${pad(month+1)} ${pad(h)}:${pad(m)}`;
   },
   valueFormat  : v => v.valueOf().toFixed(0),
